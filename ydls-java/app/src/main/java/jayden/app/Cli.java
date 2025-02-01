@@ -15,7 +15,7 @@ public class Cli {
 
         // test();
 
-        jayden.usaco.Exercise01.main(args); /// This is for `./script/java03-run.sh`, not needed.
+        jayden.usaco.Exercise01.main(args); /// This is for `./script/java02-build.sh`, not needed.
     }
 
     public static void test() {
