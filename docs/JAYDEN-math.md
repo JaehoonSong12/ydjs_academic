@@ -85,7 +85,27 @@
     - [Examples](#examples-3)
     - [Practice Problems](#practice-problems-4)
     - [Conclusion](#conclusion-4)
-
+  - [Math: Complex Numbers](#math-complex-numbers)
+    - [Definition](#definition-4)
+    - [Example](#example-1)
+    - [Key Operations with Complex Numbers](#key-operations-with-complex-numbers)
+    - [Practice Problems](#practice-problems-5)
+    - [Conclusion](#conclusion-5)
+  - [Linear Algebra](#linear-algebra)
+    - [Vector Spaces](#vector-spaces)
+    - [Key Properties](#key-properties-1)
+    - [Examples](#examples-4)
+    - [Matrices](#matrices)
+    - [Operations](#operations)
+    - [Example](#example-2)
+    - [Determinants](#determinants)
+    - [Example](#example-3)
+    - [Eigenvalues and Eigenvectors](#eigenvalues-and-eigenvectors)
+    - [Example](#example-4)
+    - [Practice Problems](#practice-problems-6)
+    - [Conclusion](#conclusion-6)
+  
+---
 
 
 
@@ -820,9 +840,116 @@ Inequality symbols are used to compare values or expressions, showing the relati
 ### Conclusion
 Understanding inequality symbols is essential for solving equations and comparing values in math.
 
+---
+## Math: Complex Numbers
+
+### Definition
+In mathematics, complex numbers consist of a real part and an imaginary part. A complex number is expressed as \( a + bi \), where:
+- \( a \) is the real part
+- \( b \) is the imaginary part
+- \( i \) is the imaginary unit, where \( i = \sqrt{-1} \)
+
+### Example
+For the complex number \( 3 + 4i \):
+- The real part is \( 3 \)
+- The imaginary part is \( 4i \)
+
+### Key Operations with Complex Numbers
+
+1. **Addition and Subtraction**:
+   - To add or subtract complex numbers, combine their real and imaginary parts separately.
+   - Example: \( (3 + 4i) + (1 + 2i) = (3 + 1) + (4i + 2i) = 4 + 6i \)
+   
+2. **Multiplication**:
+   - Multiply complex numbers by applying distributive property and simplifying using \( i^2 = -1 \).
+   - Example: \( (3 + 4i) \times (1 + 2i) = 3(1 + 2i) + 4i(1 + 2i) = 3 + 6i + 4i + 8i^2 = 3 + 10i - 8 = -5 + 10i \)
+
+3. **Conjugates**:
+   - The conjugate of a complex number \( a + bi \) is \( a - bi \).
+   - Example: The conjugate of \( 3 + 4i \) is \( 3 - 4i \).
+
+### Practice Problems
+1. Add: \( (2 + 3i) + (4 + 2i) \).
+2. Subtract: \( (5 + 6i) - (1 + 3i) \).
+3. Multiply: \( (1 + 2i) \times (3 + 4i) \).
+4. Find the conjugate of \( 6 + 7i \).
+
+### Conclusion
+Complex numbers extend the number system to include the square roots of negative numbers. They have many applications in engineering, physics, and signal processing.
 
 
+---
 
+## Linear Algebra
+
+### Vector Spaces
+A **vector space** is a collection of vectors that can be added together and multiplied by scalars (real numbers), satisfying specific properties.
+
+### Key Properties
+1. **Additive Closure**: The sum of two vectors is also a vector.
+2. **Multiplicative Closure**: A vector multiplied by a scalar is still a vector.
+3. **Commutativity and Associativity**: Addition and scalar multiplication follow the usual rules.
+4. **Existence of Zero Vector**: There exists a zero vector that does not change other vectors when added.
+
+### Examples
+1. **Example 1**: Let \( \vec{v} = (1, 2) \) and \( \vec{w} = (3, 4) \). The sum \( \vec{v} + \vec{w} = (1+3, 2+4) = (4, 6) \), which is also a vector.
+2. **Example 2**: For scalar \( c = 2 \), multiplying \( \vec{v} = (1, 2) \) by \( c \), we get \( c\vec{v} = 2(1, 2) = (2, 4) \), which is still a vector.
+
+---
+
+### Matrices
+A **matrix** is a rectangular array of numbers arranged in rows and columns.
+
+### Operations
+1. **Addition**: Matrices of the same size can be added by adding corresponding elements.
+2. **Multiplication**: Matrices can be multiplied if the number of columns in the first matrix equals the number of rows in the second matrix.
+
+### Example
+Matrix \( A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix} \) and matrix \( B = \begin{pmatrix} 5 & 6 \\ 7 & 8 \end{pmatrix} \).
+
+1. **Addition**:  
+\( A + B = \begin{pmatrix} 1+5 & 2+6 \\ 3+7 & 4+8 \end{pmatrix} = \begin{pmatrix} 6 & 8 \\ 10 & 12 \end{pmatrix} \).
+
+2. **Multiplication**:  
+\( A \times B = \begin{pmatrix} 1 \times 5 + 2 \times 7 & 1 \times 6 + 2 \times 8 \\ 3 \times 5 + 4 \times 7 & 3 \times 6 + 4 \times 8 \end{pmatrix} = \begin{pmatrix} 19 & 22 \\ 43 & 50 \end{pmatrix} \).
+
+---
+
+### Determinants
+The **determinant** of a matrix is a scalar value that can be computed from its elements and determines if a matrix has an inverse.
+
+### Example
+For a 2x2 matrix \( A = \begin{pmatrix} a & b \\ c & d \end{pmatrix} \), the determinant is:
+\[
+\text{det}(A) = ad - bc
+\]
+
+---
+
+### Eigenvalues and Eigenvectors
+An **eigenvalue** is a scalar \( \lambda \) such that for some vector \( \vec{v} \), the matrix \( A \) acting on \( \vec{v} \) scales \( \vec{v} \) by \( \lambda \), i.e., \( A\vec{v} = \lambda \vec{v} \).
+
+### Example
+For matrix \( A = \begin{pmatrix} 4 & 1 \\ 2 & 3 \end{pmatrix} \), eigenvalues can be found by solving the characteristic equation:
+\[
+\text{det}(A - \lambda I) = 0
+\]
+Where \( I \) is the identity matrix.
+
+---
+
+### Practice Problems
+1. Find the sum of two vectors \( \vec{v} = (1, 3) \) and \( \vec{w} = (4, 6) \).
+2. Multiply the matrix \( A = \begin{pmatrix} 1 & 2 \\ 3 & 4 \end{pmatrix} \) by scalar \( 2 \).
+3. Compute the determinant of \( A = \begin{pmatrix} 5 & 2 \\ 3 & 1 \end{pmatrix} \).
+4. Find the eigenvalues of matrix \( A = \begin{pmatrix} 2 & 1 \\ 1 & 2 \end{pmatrix} \).
+
+---
+
+### Conclusion
+Linear algebra is essential for understanding systems of equations, vector spaces, transformations, and many more applications. Keep practicing these concepts to develop a strong foundation.
+
+---
 
 
 

@@ -28,6 +28,19 @@ public class Exercise01 {
 
     public static void main(String[] args) {
         System.out.println(listen(10, 5));
+        System.out.println(listen(10, 2));
+
+
+        String formatter = "I ate %d apple and %s grape, and my hight is %.2f .";
+        int apple = 3;
+        String grape = "6";
+        double height = 173.252525;
+
+        String output = String.format(formatter, apple, grape, height);
+        System.out.println(output);
+
+
+
         System.out.println(dominosTime(3, 2, 1));
         System.out.println(tipAndSplit(100, 15, 4));
         System.out.println(youtuber(10, 0.5, 1000));
@@ -57,7 +70,24 @@ public class Exercise01 {
         /**
          * < Your Implementation Here >
          */
-        return null;
+        // Calculate total minutes
+        int songMin = songs * 3;
+        int podcastMin = podcasts * 25;
+        int totalMinutes = songMin + podcastMin;
+
+        // Convert to hours and minutes
+        int hours = totalMinutes / 60; // quotient -> hours
+        int minutes = totalMinutes % 60; // remainder -> minute
+        // integer division
+        // e.g. 154 min -> 2 hour 34 min
+
+        // Return the formatted string
+        /**
+         * 
+         * The String.format() method in Java is used to create a formatted string.
+         * 
+         */
+        return String.format(formatter, songs, podcasts, hours, minutes);
     }
 
     /**
@@ -84,7 +114,16 @@ public class Exercise01 {
         /**
          * < Your Implementation Here >
          */
-        return null;
+        // Prices of each item
+        int pizzaPrice = 12;
+        int pastaPrice = 6;
+        int wingsPrice = 8;
+        
+        // Calculate total cost
+        int totalCost = (pizzas * pizzaPrice) + (pastas * pastaPrice) + (wings * wingsPrice);
+        
+        // Return formatted string
+        return String.format(formatter,pizzas, pastas, wings, totalCost);
     }
 
     /**
@@ -103,10 +142,14 @@ public class Exercise01 {
      *         Both the tip and per-person cost should be rounded to 2 decimal places.
      */
     public static String tipAndSplit(double total, int tipPercentage, int people) {
-        /**
-         * < Your Implementation Here >
-         */
-        return null;
+        // Calculate tip amount
+        double tip = (total * tipPercentage) / 100.0;
+        
+        // Calculate per-person cost
+        double perPersonCost = (total + tip) / people;
+        
+        // Format output to 2 decimal places
+        return String.format("The driver got a tip of $%.2f. Each person paid $%.2f.", tip, perPersonCost);
     }
 
     /**
@@ -125,10 +168,12 @@ public class Exercise01 {
      *         Earnings should be rounded to 2 decimal places.
      */
     public static String youtuber(int videos, double payPerView, int views) {
-        /**
-         * < Your Implementation Here >
-         */
-        return null;
+        if (videos <= 0 || payPerView <= 0 || views <= 0) {
+            return "Invalid input. All values must be positive.";
+        }
+        
+        double totalEarnings = videos * views * payPerView;
+        return String.format("You have made $%.2f by making YouTube videos!", totalEarnings);
     }
 
     /**
@@ -136,15 +181,18 @@ public class Exercise01 {
      * The method computes the volume using the formula for the volume of a sphere:
      * - Volume = (4/3) * π * radius^3
      * 
+     * +
+     * 6-
      * @param radius Radius of the bath bomb (must be a positive floating-point value)
      * @return A formatted string showing the volume of the bath bomb.
      *         The format is: "The volume of a bath bomb with radius X.X is Y.YY."
      *         The volume should be rounded to 2 decimal places.
      */
     public static String bathBomb(double radius) {
-        /**
-         * < Your Implementation Here >
-         */
-        return null;
+        // Calculate the volume of the bath bomb using the formula for the volume of a sphere
+        double volume = (4.0 / 3.0) * Math.PI * Math.pow(radius, 3);
+        
+        // Format the result to 2 decimal places
+        return String.format("The volume of a bath bomb with radius %.1f is %.2f.", radius, volume);
     }
 }
