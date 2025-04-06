@@ -34,17 +34,11 @@ int main(void) {
     print("Using facade: I am learning C.");
     print("Using facade: And it is awesome!");
     
-    // // Using direct printing without the facade
-    // printf("\n--- Direct Printing without Facade ---\n");
-    // printf("%s\n", "Direct: Hello World!");
-    // printf("%s\n", "Direct: I am learning C.");
-    // printf("%s\n", "Direct: And it is awesome!");
-
-
-
-
-
-    print("Hello world!");
+    // Using direct printing without the facade
+    printf("\n--- Direct Printing without Facade ---\n");
+    printf("%s\n", "Direct: Hello World!");
+    printf("%s\n", "Direct: I am learning C.");
+    printf("%s\n", "Direct: And it is awesome!");
     
     return 0;
 }

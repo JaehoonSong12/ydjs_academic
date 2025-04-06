@@ -1,28 +1,8 @@
-/**
- * SwingApp.java
- * 
- * This is a Java Swing application that 
- * 
- * MVC Design Principle:
- * - ...
- *
- * How to compile and run the application:
- * 1. Open a terminal or command prompt.
- * 2. Compile: 
- *      `javac async/*.java`
- * 3. Run: 
- *      `java -cp async SwingApp`
- * 4. Clean: 
- *      `rm -rf async/*.class`
- */
-
-
-
 import javax.swing.*;
 import java.awt.*;
 
 
-public class SwingApp {
+public class SwingTemplateApp {
     private static JFrame frame;
 
     public static void main(String[] args) {
@@ -156,9 +136,9 @@ class MenuController {
         User user = new User(username);
 
         switch (gameName) {
-            case "Game 1": SwingApp.setView(new Game1Controller(user).getView()); break;
-            case "Game 2": SwingApp.setView(new Game2Controller(user).getView()); break;
-            case "Game 3": SwingApp.setView(new Game3Controller(user).getView()); break;
+            case "Game 1": SwingTemplateApp.setView(new Game1Controller(user).getView()); break;
+            case "Game 2": SwingTemplateApp.setView(new Game2Controller(user).getView()); break;
+            case "Game 3": SwingTemplateApp.setView(new Game3Controller(user).getView()); break;
         }
     }
 
@@ -289,14 +269,15 @@ class Game1Controller {
     
     private void initController() {
         view.getBackButton().addActionListener(e -> 
-            SwingApp.setView(new MenuController(new MenuView()).getView())
+            SwingTemplateApp.setView(new MenuController(new MenuView()).getView())
         );
         view.getHeadButton().addActionListener(e -> processGuess("head"));
         view.getTailButton().addActionListener(e -> processGuess("tail"));
     }
     
     private void processGuess(String guess) {
-        int random_number = (int) (Math.random() * 2);
+       // int random_number = (int) (Math.random() * 2);
+       int random_number = 0;
         String coin = (random_number == 0) ? "tail" : "head";
         if (coin.equalsIgnoreCase(guess)) {
             score++;
@@ -378,7 +359,7 @@ class Game2Controller {
     }
 
     private void initController() {
-        view.getBackButton().addActionListener(e -> SwingApp.setView(new MenuController(new MenuView()).getView()));
+        view.getBackButton().addActionListener(e -> SwingTemplateApp.setView(new MenuController(new MenuView()).getView()));
     }
 
     public Game2View getView() {
@@ -452,7 +433,7 @@ class Game3Controller {
     }
 
     private void initController() {
-        view.getBackButton().addActionListener(e -> SwingApp.setView(new MenuController(new MenuView()).getView()));
+        view.getBackButton().addActionListener(e -> SwingTemplateApp.setView(new MenuController(new MenuView()).getView()));
     }
 
     public Game3View getView() {
