@@ -260,8 +260,18 @@ public class AlgorithmAPXXtra {
      * </p>
      */
     public static int luckySum(int a, int b, int c) {
-        // [Your Implementation Here]
+        int[] arr = {a, b, c};
+        int sum = 0;
     
+        for (int i = 0; i < arr.length; i++) {
+            if (arr[i] == 13) {
+                break;
+            }
+            sum += arr[i];
+        }
+    
+        return sum;
+        
         // Case-1. If the question can be solved with 'iteration (for/while)', 
         //         design the most efficient algorithm.
     
@@ -269,7 +279,7 @@ public class AlgorithmAPXXtra {
         //         correct algorithm. Since the recursion can be inefficient, 
         //         use either 'tabulation' or 'memorization' to break it down 
         //         into 'iteration'.
-        return 0;
+
     }
 
 
