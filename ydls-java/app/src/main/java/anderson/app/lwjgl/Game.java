@@ -117,11 +117,14 @@ public class Game {
     }
 
     private void update(float dt) {
+        
         // input
         if (GLFW.glfwGetKey(window, keyMap.get("LEFT")) == GLFW.GLFW_PRESS) player.moveHoriz(-1);
         if (GLFW.glfwGetKey(window, keyMap.get("RIGHT")) == GLFW.GLFW_PRESS) player.moveHoriz(1);
-        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_PRESS) player.jump();
+        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_PRESS) player.chargejump();
+        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_RELEASE) player.jump();
         if (GLFW.glfwGetKey(window, keyMap.get("DOWN")) == GLFW.GLFW_PRESS) player.fall();
+        
 
         player.applyGravity(dt);
         player.update(dt, platforms);
@@ -232,64 +235,163 @@ class Camera {
 class Player {
     public float x, y;
     private float vx, vy;
-    private final float speed=200, jumpSpeed=400, higherJumpAdditionalSpeed=200;
+    private final float speed = 200, jumpSpeed = 400, higherJumpAdditionalSpeed = 300, additionalJumpSpeed = 400;
     private boolean onGround;
     private boolean isHigherJump;
     private int counter;
+    private int additionalJumpinfo = 0;
+    private int allowedJump = 2;
+    private int numberOfJump;
 
+    // For additional jump oval rendering
+    private boolean showAdditionalJumpOval = false;
+    private float jumpOvalTimer = 0f;  // Timer for how long to show the oval
+    private final float jumpOvalDuration = 0.3f; // duration to show oval in seconds
 
-    public Player(float x, float y) { this.x=x; this.y=y; }
-    public void moveHoriz(int dir) { vx = dir * speed; }
-    public void jump() { 
-        if (onGround) { vy = jumpSpeed; onGround=false;} 
-        if (!onGround && !isHigherJump) {
-            counter++;
-            if (counter > 4 && vy > 0) {isHigherJump = true; vy += higherJumpAdditionalSpeed;}
+    public Player(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public void moveHoriz(int dir) {
+        vx = dir * speed;
+    }
+
+    public void chargejump() {
+        if (!onGround && numberOfJump < allowedJump) {
+            additionalJumpinfo++;
+        }
+        if (onGround) {
+            counter = counter + 5;
+            additionalJumpinfo = 0;
+        }
+        if (counter >= higherJumpAdditionalSpeed) {
+            counter = 300;
+            jump();
+        }
+        if (additionalJumpinfo >= 20) {
+            vy = additionalJumpSpeed;
+            additionalJumpinfo = 5;
+            numberOfJump++;
+
+            // Show oval only when additional jump occurs
+            showAdditionalJumpOval = true;
+            jumpOvalTimer = jumpOvalDuration;
         }
     }
-    public void fall() { 
-        // if (!onGround) { vy -= speed; } 
-        System.out.println("Player{x=" + x + 
-        ", y=" + y + ", vx=" + vx + ", vy=" + vy + 
-        ", onGround=" + onGround + ", isHigherJump=" + isHigherJump + ", counter=" + counter +
-        "}");
+
+    public void jump() {
+        if (counter > 5 && onGround) { // normal jump only on ground
+            vy = jumpSpeed + counter;
+            counter = 0;
+        }
     }
-    public void applyGravity(float dt) { vy -= 980 * dt; }
+
+    public void fall() {
+        if (!onGround) {
+            vy -= speed;
+            y = y - 20;
+        }
+    }
+
+    public void applyGravity(float dt) {
+        vy -= 980 * dt;
+    }
 
     public void update(float dt, List<Platform> plats) {
         x += vx * dt;
         y += vy * dt;
         onGround = false;
-        for (Platform p: plats) {
-            if (x+20 > p.x && x< p.x+p.w && y <= p.y+p.h && y>=p.y) {
+
+        for (Platform p : plats) {
+            if (x + 20 > p.x && x < p.x + p.w && y <= p.y + p.h && y >= p.y) {
                 y = p.y + p.h;
                 vy = 0;
                 onGround = true;
-                counter = 0;
-                isHigherJump = false;
+                additionalJumpinfo = 0;
+                numberOfJump = 0;
             }
         }
+
+        // Countdown timer for additional jump oval
+        if (showAdditionalJumpOval) {
+            jumpOvalTimer -= dt;
+            if (jumpOvalTimer <= 0) {
+                showAdditionalJumpOval = false;
+                jumpOvalTimer = 0;
+            }
+        }
+
+        if (y < 20) {
+            y = 0;
+            onGround = true;
+            vy = 0;
+        }
+
         vx = 0;
         if (y<20) { y=0; onGround=true; vy=0; }
+        System.out.println("Player{x=" + x + 
+        ", y=" + y + ", vx=" + vx + ", vy=" + vy + 
+        ", onGround=" + onGround + 
+        ", counter=" + counter + ", additionalJumpinfo=" + additionalJumpinfo +
+        ", numberOfJump=" + numberOfJump +
+        ", showJumpOval=" + showJumpOval +
+        "}");
     }
 
     public boolean collides(Star s) {
-        return Math.hypot((x+10)-s.x, (y+10)-s.y) < 15;
+        return Math.hypot((x + 10) - s.x, (y + 10) - s.y) < 15;
     }
+
     public boolean collides(Mob m) {
-        return x< m.x+m.size && x+20>m.x && y< m.y+m.size && y+20>m.y;
+        return x < m.x + m.size && x + 20 > m.x && y < m.y + m.size && y + 20 > m.y;
+    }
+
+    public void renderJumpOval() {
+        if (!showAdditionalJumpOval) return;
+
+        glPushMatrix();
+        glTranslatef(x + 10, y - 5, 0); // position oval just under player center
+
+        glColor4f(1f, 1f, 1f, 0.5f); // semi-transparent white
+
+        int segments = 40;
+        float radiusX = 15f;
+        float radiusY = 7f;
+
+        glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(0, 0);
+        for (int i = 0; i <= segments; i++) {
+            double angle = 2 * Math.PI * i / segments;
+            float dx = (float) Math.cos(angle) * radiusX;
+            float dy = (float) Math.sin(angle) * radiusY;
+            glVertex2f(dx, dy);
+        }
+        glEnd();
+
+        glPopMatrix();
     }
 
     public void render() {
-        glColor3f(0,0,1);
+        renderJumpOval(); // draw oval if needed
+
+        if (counter == 0) {
+            glColor3f(0, 0, 1); // Blue when on ground
+        } else {
+            float red = Math.min(1.0f, counter / 300f); // Scale red based on charge
+            glColor3f(red, 0, 1 - red); // Transition from blue to red
+        }
+
         glBegin(GL_QUADS);
         glVertex2f(x, y);
-        glVertex2f(x+20, y);
-        glVertex2f(x+20, y+20);
-        glVertex2f(x, y+20);
+        glVertex2f(x + 20, y);
+        glVertex2f(x + 20, y + 20);
+        glVertex2f(x, y + 20);
         glEnd();
     }
 }
+
+
 
 // Static platforms
 class Platform {
