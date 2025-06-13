@@ -1,11 +1,6 @@
 // src/main/java/com/example/Game.java
 package anderson.app.lwjgl;
 
-
-
-
-
-
 import java.net.URL;
 
 import org.lwjgl.glfw.GLFW;
@@ -17,7 +12,6 @@ import org.lwjgl.system.MemoryStack;
 
 import java.util.*;
 
-
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.io.InputStream;
@@ -26,92 +20,112 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.io.File;
 
-
-
 public class Game {
-    private long window;
-    private final int width = 800, height = 600;
+    private static final int WINDOW_WIDTH = 800;
+    private static final int WINDOW_HEIGHT = 600;
+    static final float WORLD_WIDTH = WINDOW_WIDTH * 3f;
+    static final float WORLD_HEIGHT = WINDOW_HEIGHT;
+    private static final String[] POSSIBLE_KEYS = {"Q", "A", "W", "S", "E", "D"};
+    private static final int MAX_LIVES = 3;
+    private static final int INITIAL_SCORE = 0;
+    private static final int STAR_COUNT = 5;
 
-    // Texture cache for digits
-    private int[] digitTextures = null;
-
-    // world & camera
-    private final float worldWidth = width * 3f, worldHeight = height;
-    private Camera camera;
-    private Player player;
-    private List<Platform> platforms;
+    private final long window;
+    private final boolean enableShuffling;
+    private int[] digitTextures;
+    private final Camera camera;
+    private final Player player;
+    private final List<Platform> platforms;
     private List<Star> stars;
-    private List<Mob> mobs;
-
-    // UI
-    private int lives = 3;
-    private int score = 0;
-
-    // controls mapping
+    private final List<Mob> mobs;
+    private int lives;
+    private int score;
     private Map<String, Integer> keyMap;
-    private final String[] possibleKeys = {"Q","A","W","S","E","D"};
 
-    public void run() {
-        init();
-        loop();
-        cleanup();
+    public Game() {
+        this.window = initializeWindow();
+        this.enableShuffling = false;
+        this.camera = new Camera(WINDOW_WIDTH, WINDOW_HEIGHT, WORLD_WIDTH);
+        this.player = new Player(100, 50);
+        this.platforms = new ArrayList<>();
+        this.stars = new ArrayList<>();
+        this.mobs = new ArrayList<>();
+        this.lives = MAX_LIVES;
+        this.score = INITIAL_SCORE;
+        initializeGame();
     }
 
-    private void init() {
+    private long initializeWindow() {
         GLFWErrorCallback.createPrint(System.err).set();
-        if (!GLFW.glfwInit()) throw new IllegalStateException("Unable to init GLFW");
+        if (!GLFW.glfwInit()) {
+            throw new IllegalStateException("Unable to initialize GLFW");
+        }
+        
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_FALSE);
-        window = GLFW.glfwCreateWindow(width, height, "Platformer", 0, 0);
+        long window = GLFW.glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Platformer", 0, 0);
+        if (window == 0) {
+            throw new RuntimeException("Failed to create GLFW window");
+        }
+        
         GLFW.glfwMakeContextCurrent(window);
         GLFW.glfwShowWindow(window);
         GL.createCapabilities();
         glClearColor(0.5f, 0.8f, 1f, 0);
+        
+        return window;
+    }
 
-        // setup world
-        camera = new Camera(width, height, worldWidth);
+    private void initializeGame() {
         randomizeControls();
-        player = new Player(100, 50);
         generatePlatforms();
-        spawnStars(5);
-        mobs = new ArrayList<>();
+        spawnStars(STAR_COUNT);
     }
 
     private void randomizeControls() {
-        List<Character> keys = new ArrayList<>(Arrays.asList('W','A','D','S','Q','E'));
-        Collections.shuffle(keys);
+        List<Character> keys = new ArrayList<>(Arrays.asList('W', 'A', 'D', 'S', 'Q', 'E'));
+        if (enableShuffling) {
+            Collections.shuffle(keys);
+        }
+        
         keyMap = new HashMap<>();
-        keyMap.put("UP",    getKeyCode(keys.get(0)));
-        keyMap.put("LEFT",  getKeyCode(keys.get(1)));
+        keyMap.put("UP", getKeyCode(keys.get(0)));
+        keyMap.put("LEFT", getKeyCode(keys.get(1)));
         keyMap.put("RIGHT", getKeyCode(keys.get(2)));
-        keyMap.put("DOWN",  getKeyCode(keys.get(3)));
-        System.out.println("Key Mapping:");
-        System.out.println("UP    = " + keys.get(0));
-        System.out.println("LEFT  = " + keys.get(1));
-        System.out.println("RIGHT = " + keys.get(2));
-        System.out.println("DOWN  = " + keys.get(3));
+        keyMap.put("DOWN", getKeyCode(keys.get(3)));
+        keyMap.put("CHARACTER_SKILL", getKeyCode(keys.get(4)));
+        
+        printKeyMapping(keys);
     }
 
-    // Map character to GLFW key code
+    private void printKeyMapping(List<Character> keys) {
+        System.out.println("Key Mapping:");
+        System.out.println("UP = " + keys.get(0));
+        System.out.println("LEFT = " + keys.get(1));
+        System.out.println("RIGHT = " + keys.get(2));
+        System.out.println("DOWN = " + keys.get(3));
+        System.out.println("CHARACTER_SKILL = " + keys.get(4));
+    }
+
     private int getKeyCode(char c) {
-        switch (c) {
-            case 'Q': return GLFW.GLFW_KEY_Q;
-            case 'A': return GLFW.GLFW_KEY_A;
-            case 'W': return GLFW.GLFW_KEY_W;
-            case 'S': return GLFW.GLFW_KEY_S;
-            case 'E': return GLFW.GLFW_KEY_E;
-            case 'D': return GLFW.GLFW_KEY_D;
-            default:  return GLFW.GLFW_KEY_SPACE;
-        }
+        return switch (c) {
+            case 'Q' -> GLFW.GLFW_KEY_Q;
+            case 'A' -> GLFW.GLFW_KEY_A;
+            case 'W' -> GLFW.GLFW_KEY_W;
+            case 'S' -> GLFW.GLFW_KEY_S;
+            case 'E' -> GLFW.GLFW_KEY_E;
+            case 'D' -> GLFW.GLFW_KEY_D;
+            default -> GLFW.GLFW_KEY_SPACE;
+        };
     }
 
     private void generatePlatforms() {
-        platforms = new ArrayList<>();
-        // ground
-        platforms.add(new Platform(0, 0, worldWidth, 20));
-        // floating
+        platforms.clear();
+        // Ground
+        platforms.add(new Platform(0, 0, WORLD_WIDTH, 20));
+        // Floating platforms
         platforms.add(new Platform(400, 90, 200, 20));
         platforms.add(new Platform(800, 140, 150, 20));
-        platforms.add(new Platform(1400,  290, 200, 20));
+        platforms.add(new Platform(1400, 290, 200, 20));
         platforms.add(new Platform(2000, 190, 200, 20));
     }
 
@@ -119,181 +133,228 @@ public class Game {
         stars = new ArrayList<>();
         Random rnd = new Random();
         for (int i = 0; i < count; i++) {
-            float x = 50 + rnd.nextFloat() * (worldWidth - 100);
-            float y = 50 + rnd.nextFloat() * (worldHeight - 200);
+            float x = 50 + rnd.nextFloat() * (WORLD_WIDTH - 100);
+            float y = 50 + rnd.nextFloat() * (WORLD_HEIGHT - 200);
             stars.add(new Star(x, y));
         }
     }
 
-    private void loop() {
-        double last = GLFW.glfwGetTime();
-        while (!GLFW.glfwWindowShouldClose(window)) {
-            double now = GLFW.glfwGetTime();
-            float delta = (float)(now - last);
-            last = now;
+    public void run() {
+        gameLoop();
+        cleanup();
+    }
 
-            update(delta);
+    private void gameLoop() {
+        double lastTime = GLFW.glfwGetTime();
+        while (!GLFW.glfwWindowShouldClose(window)) {
+            double currentTime = GLFW.glfwGetTime();
+            float deltaTime = (float) (currentTime - lastTime);
+            lastTime = currentTime;
+
+            update(deltaTime);
             render();
+            
             GLFW.glfwSwapBuffers(window);
             GLFW.glfwPollEvents();
         }
     }
 
-    private void update(float dt) {
-        
-        // input
-        if (GLFW.glfwGetKey(window, keyMap.get("LEFT")) == GLFW.GLFW_PRESS) player.moveHoriz(-1);
-        if (GLFW.glfwGetKey(window, keyMap.get("RIGHT")) == GLFW.GLFW_PRESS) player.moveHoriz(1);
-        
-        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_PRESS) player.jCharge();
-        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_RELEASE) player.jump();
+    private void update(float deltaTime) {
+        handleInput();
+        updateGameState(deltaTime);
+        checkCollisions();
+    }
 
-        if (GLFW.glfwGetKey(window, keyMap.get("DOWN")) == GLFW.GLFW_PRESS) player.fall();
-        
+    private void handleInput() {
+        if (GLFW.glfwGetKey(window, keyMap.get("LEFT")) == GLFW.GLFW_PRESS) {
+            player.moveHoriz(-1, false);
+        }
+        if (GLFW.glfwGetKey(window, keyMap.get("RIGHT")) == GLFW.GLFW_PRESS) {
+            player.moveHoriz(1, true);
+        }
+        if (GLFW.glfwGetKey(window, keyMap.get("CHARACTER_SKILL")) == GLFW.GLFW_PRESS) {
+            player.dash();
+        }
+        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_PRESS) {
+            player.jCharge();
+        }
+        if (GLFW.glfwGetKey(window, keyMap.get("UP")) == GLFW.GLFW_RELEASE) {
+            player.jump();
+        }
+        if (GLFW.glfwGetKey(window, keyMap.get("DOWN")) == GLFW.GLFW_PRESS) {
+            player.fall();
+        }
+    }
 
-        player.applyGravity(dt);
-        player.update(dt, platforms);
+    private void updateGameState(float deltaTime) {
+        player.applyGravity(deltaTime);
+        player.update(deltaTime, platforms);
         camera.follow(player);
+        
+        for (Mob mob : mobs) {
+            mob.update(deltaTime);
+        }
+    }
 
-        // collect stars
-        stars.removeIf(s -> {
-            if (player.collides(s)) {
+    private void checkCollisions() {
+        // Collect stars
+        stars.removeIf(star -> {
+            if (player.collides(star)) {
                 score++;
                 return true;
             }
             return false;
         });
+
         if (stars.isEmpty()) {
-            spawnStars(5);
+            spawnStars(STAR_COUNT);
             randomizeControls();
         }
 
-        // mobs update (simple spawning omitted)
-        for (Mob m : mobs) m.update(dt);
-        mobs.removeIf(m -> { if (player.collides(m)) { lives--; return true; } return false; });
+        // Check mob collisions
+        mobs.removeIf(mob -> {
+            if (player.collides(mob)) {
+                lives--;
+                return true;
+            }
+            return false;
+        });
     }
 
     private void render() {
         glClear(GL_COLOR_BUFFER_BIT);
         camera.begin();
 
-        // draw platforms
-        for (Platform p : platforms) p.render();
-        // draw stars
-        for (Star s : stars) s.render();
-        // draw player
+        // Render game objects
+        platforms.forEach(Platform::render);
+        stars.forEach(Star::render);
         player.render();
-        // draw mobs
-        for (Mob m : mobs) m.render();
+        mobs.forEach(Mob::render);
 
         camera.end();
-
-        // UI overlay
         renderUI();
     }
 
     private void renderUI() {
-        // Simple UI: draw lives as red squares, score as quads count
+        setupUIProjection();
+        renderLives();
+        renderScore();
+    }
+
+    private void setupUIProjection() {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(0, width, 0, height, -1, 1);
+        glOrtho(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT, -1, 1);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
+    }
 
-        // Lives
-        glColor3f(1,0,0);
+    private void renderLives() {
+        glColor3f(1, 0, 0);
         for (int i = 0; i < lives; i++) {
             glBegin(GL_QUADS);
-            glVertex2f(10 + i*25, height - 10);
-            glVertex2f(25 + i*25, height - 10);
-            glVertex2f(25 + i*25, height - 25);
-            glVertex2f(10 + i*25, height - 25);
+            glVertex2f(10 + i * 25, WINDOW_HEIGHT - 10);
+            glVertex2f(25 + i * 25, WINDOW_HEIGHT - 10);
+            glVertex2f(25 + i * 25, WINDOW_HEIGHT - 25);
+            glVertex2f(10 + i * 25, WINDOW_HEIGHT - 25);
             glEnd();
         }
-        // Score indicator using digit textures
+    }
+
+    private void renderScore() {
         if (digitTextures == null) {
-            digitTextures = new int[10];
-            for (int i = 0; i < 10; i++) {
-                String path = "/anderson/number_" + i + ".png";
-                digitTextures[i] = loadTexture(path);
-            }
+            initializeDigitTextures();
         }
 
         String scoreStr = Integer.toString(score);
-        float sx = width / 2f - (scoreStr.length() * 20) / 2f;
-        float sy = height - 30;
-        float dx = 0;
+        float startX = WINDOW_WIDTH / 2f - (scoreStr.length() * 20) / 2f;
+        float startY = WINDOW_HEIGHT - 30;
 
-        glEnable(GL_TEXTURE_2D);
-        for (char c : scoreStr.toCharArray()) {
-            int digit = c - '0';
-            if (digit < 0 || digit > 9) continue;
-            glBindTexture(GL_TEXTURE_2D, digitTextures[digit]);
-            glColor3f(1, 1, 1);
-            glBegin(GL_QUADS);
-            glTexCoord2f(0, 0); glVertex2f(sx + dx, sy);
-            glTexCoord2f(1, 0); glVertex2f(sx + dx + 20, sy);
-            glTexCoord2f(1, 1); glVertex2f(sx + dx + 20, sy + 20);
-            glTexCoord2f(0, 1); glVertex2f(sx + dx, sy + 20);
-            glEnd();
-            dx += 20;
-        }
-        glBindTexture(GL_TEXTURE_2D, 0);
-        glDisable(GL_TEXTURE_2D);
-        // glColor3f(1,1,0);
-        // for (int i = 0; i < score; i++) {
-        //     glBegin(GL_QUADS);
-        //     glVertex2f(width/2 - 10 + i*15, height - 10);
-        //     glVertex2f(width/2 + 10 + i*15, height - 10);
-        //     glVertex2f(width/2 + 10 + i*15, height - 25);
-        //     glVertex2f(width/2 - 10 + i*15, height - 25);
-        //     glEnd();
-        // }
-        // Controls under player
-        // Could draw small quads below player, omitted for brevity
+        renderScoreBackground(startX, startY, scoreStr.length());
+        renderScoreDigits(scoreStr, startX, startY);
     }
 
+    private void initializeDigitTextures() {
+        digitTextures = new int[10];
+        for (int i = 0; i < 10; i++) {
+            String path = "/anderson/number_" + i + ".png";
+            digitTextures[i] = loadTexture(path);
+        }
+    }
 
+    private void renderScoreBackground(float startX, float startY, int scoreLength) {
+        glColor3f(0.5f, 0.8f, 1f);
+        glBegin(GL_QUADS);
+        glVertex2f(startX - 10, startY - 5);
+        glVertex2f(startX + scoreLength * 20 + 10, startY - 5);
+        glVertex2f(startX + scoreLength * 20 + 10, startY + 25);
+        glVertex2f(startX - 10, startY - 5);
+        glEnd();
+    }
 
-    // Texture loading utility
+    private void renderScoreDigits(String scoreStr, float startX, float startY) {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        glEnable(GL_TEXTURE_2D);
+
+        float currentX = startX;
+        for (char c : scoreStr.toCharArray()) {
+            int digit = c - '0';
+            if (digit >= 0 && digit <= 9) {
+                renderDigit(digit, currentX, startY);
+            }
+            currentX += 20;
+        }
+
+        glBindTexture(GL_TEXTURE_2D, 0);
+        glDisable(GL_TEXTURE_2D);
+        glDisable(GL_BLEND);
+    }
+
+    private void renderDigit(int digit, float x, float y) {
+        glBindTexture(GL_TEXTURE_2D, digitTextures[digit]);
+        glColor4f(1, 1, 1, 1);
+        glBegin(GL_QUADS);
+        glTexCoord2f(0, 0); glVertex2f(x, y);
+        glTexCoord2f(1, 0); glVertex2f(x + 20, y);
+        glTexCoord2f(1, 1); glVertex2f(x + 20, y + 20);
+        glTexCoord2f(0, 1); glVertex2f(x, y + 20);
+        glEnd();
+    }
+
     private int loadTexture(String resourcePath) {
-        int textureID;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer width = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
             IntBuffer channels = stack.mallocInt(1);
 
-            // Load image from resource
             InputStream in = getClass().getResourceAsStream(resourcePath);
-            if (in == null) throw new RuntimeException("Image not found: " + resourcePath);
+            if (in == null) {
+                throw new RuntimeException("Image not found: " + resourcePath);
+            }
 
-            // Copy resource to a temp file
             File tempFile = File.createTempFile("texture", ".png");
             tempFile.deleteOnExit();
             Files.copy(in, tempFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
 
-            // Flip image vertically on load
             stbi_set_flip_vertically_on_load(true);
-
-            // Load image data
             ByteBuffer image = stbi_load(tempFile.getAbsolutePath(), width, height, channels, 4);
-            if (image == null) throw new RuntimeException("Failed to load texture: " + stbi_failure_reason());
+            if (image == null) {
+                throw new RuntimeException("Failed to load texture: " + stbi_failure_reason());
+            }
 
-            // Generate OpenGL texture
-            textureID = glGenTextures();
+            int textureID = glGenTextures();
             glBindTexture(GL_TEXTURE_2D, textureID);
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width.get(), height.get(), 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
 
-            // Set texture parameters
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
             stbi_image_free(image);
+            return textureID;
         } catch (Exception e) {
             throw new RuntimeException("Error loading texture: " + resourcePath, e);
         }
-
-        return textureID;
     }
 
     private void cleanup() {
@@ -309,175 +370,258 @@ public class Game {
 
 // Camera follows the player
 class Camera {
-    private final int screenW, screenH;
-    private final float worldW;
+    private static final float NEAR_PLANE = -1f;
+    private static final float FAR_PLANE = 1f;
+
+    private final int screenWidth;
+    private final int screenHeight;
+    private final float worldWidth;
     private float x;
-    public Camera(int w, int h, float worldW) { screenW=w; screenH=h; this.worldW=worldW; }
-    public void follow(Player p) {
-        x = p.x - screenW/2f;
-        if (x<0) x=0;
-        if (x>worldW-screenW) x=worldW-screenW;
+
+    public Camera(int width, int height, float worldWidth) {
+        this.screenWidth = width;
+        this.screenHeight = height;
+        this.worldWidth = worldWidth;
+        this.x = 0f;
     }
+
+    public void follow(Player player) {
+        x = player.getX() - screenWidth / 2f;
+        x = Math.max(0, Math.min(x, worldWidth - screenWidth));
+    }
+
     public void begin() {
         glMatrixMode(GL_PROJECTION);
         glLoadIdentity();
-        glOrtho(x, x+screenW, 0, screenH, -1, 1);
+        glOrtho(x, x + screenWidth, 0, screenHeight, NEAR_PLANE, FAR_PLANE);
         glMatrixMode(GL_MODELVIEW);
         glLoadIdentity();
     }
-    public void end() { /* nothing */ }
+
+    public void end() {
+        // Nothing to do here
+    }
 }
 
 // Simple player with gravity and collision
 class Player {
-    private final int width = 800, height = 600;
-    private final float worldWidth = width * 3f, worldHeight = height;
-    private final float speed = 200, jumpSpeed = 400, higherJumpAdditionalSpeed = 300, additionalJumpSpeed = 400;
-    private final int MAX_ADDITIONAL_JUMP = 2;
-    private final int MAX_COUNTER = 300;
-    private final int _COUNTER_INCREMENT = 10;
+    private static final float SPEED = 200f;
+    private static final float JUMP_SPEED = 400f;
+    private static final float HIGHER_JUMP_ADDITIONAL_SPEED = 300f;
+    private static final float ADDITIONAL_JUMP_SPEED = 400f;
+    private static final int MAX_ADDITIONAL_JUMP = 2;
+    private static final int MAX_COUNTER = 300;
+    private static final int COUNTER_INCREMENT = 10;
+    private static final float DASH_COOLDOWN = 3.0f;
+    private static final float DASH_DURATION = 0.2f;
+    private static final float DASH_DISTANCE = 200f;
+    private static final float JUMP_OVAL_DURATION = 0.3f;
+    private static final float JUMP_OVAL_RADIUS_X = 15f;
+    private static final float JUMP_OVAL_RADIUS_Y = 7f;
+    private static final int JUMP_OVAL_SEGMENTS = 40;
 
-    public float x, y;
+    private float x, y;
     private float vx, vy;
     private boolean onGround;
     private int counter;
     private boolean enableAdditionalJump;
+    private boolean dashLeftOrRight;
+    private float dashCooldown;
     private int numberOfJump;
-    // For additional jump oval rendering
-    private boolean showAdditionalJumpOval = false;
-    private float jumpOvalTimer = 0f;
-    private final float jumpOvalDuration = 0.3f;
-    private float jumpOvalX = 0f, jumpOvalY = 0f;
-    private float jumpOvalAlpha = 0f;
+    private boolean showAdditionalJumpOval;
+    private float jumpOvalTimer;
+    private float jumpOvalX, jumpOvalY;
+    private float jumpOvalAlpha;
+    private final DashTriangle dashTriangle;
+    private boolean isDashing;
+    private float dashTimer;
 
     public Player(float x, float y) {
         this.x = x;
         this.y = y;
+        this.dashTriangle = new DashTriangle(x, y);
+        this.dashCooldown = 0f;
+        this.dashTimer = 0f;
+        this.isDashing = false;
+        this.showAdditionalJumpOval = false;
+        this.jumpOvalTimer = 0f;
+        this.jumpOvalAlpha = 0f;
+        this.counter = 0;
+        this.numberOfJump = 0;
+        this.enableAdditionalJump = false;
     }
 
-    public void moveHoriz(int dir) {
-        vx = dir * speed;
+    public void moveHoriz(int dir, boolean leftOrRight) {
+        vx = dir * SPEED;
+        dashLeftOrRight = leftOrRight;
+    }
+
+    public void dash() {
+        if (dashCooldown <= 0f) {
+            isDashing = true;
+            dashTimer = DASH_DURATION;
+            x += dashLeftOrRight ? DASH_DISTANCE : -DASH_DISTANCE;
+            dashCooldown = DASH_COOLDOWN;
+        }
     }
 
     public void jCharge() {
         enableAdditionalJump = (!onGround && numberOfJump < MAX_ADDITIONAL_JUMP);
 
         if (onGround && counter < MAX_COUNTER) {
-            counter = counter + _COUNTER_INCREMENT;
+            counter += COUNTER_INCREMENT;
         }
-        if (counter >= higherJumpAdditionalSpeed) {
-            
+        if (counter >= HIGHER_JUMP_ADDITIONAL_SPEED) {
             counter = MAX_COUNTER;
         }
     }
 
     public void jump() {
-        if (counter > _COUNTER_INCREMENT && onGround) {
-            vy = jumpSpeed + counter;
+        if (counter > COUNTER_INCREMENT && onGround) {
+            vy = JUMP_SPEED + counter;
             counter = 0;
         }
         if (enableAdditionalJump && !onGround) {
-            vy = additionalJumpSpeed;
-            this.enableAdditionalJump = false;
+            vy = ADDITIONAL_JUMP_SPEED;
+            enableAdditionalJump = false;
             numberOfJump++;
-
-            // Show oval only when additional jump occurs
-            showAdditionalJumpOval = true;
-            jumpOvalTimer = jumpOvalDuration;
-            jumpOvalX = x + 10;
-            jumpOvalY = y - 5;
-            jumpOvalAlpha = 0.5f;
+            showAdditionalJumpOval();
         }
     }
 
+    private void showAdditionalJumpOval() {
+        showAdditionalJumpOval = true;
+        jumpOvalTimer = JUMP_OVAL_DURATION;
+        jumpOvalX = x + 10;
+        jumpOvalY = y - 5;
+        jumpOvalAlpha = 0.5f;
+    }
+
     public void fall() {
-            y = y - 20;
+        y -= 20;
     }
 
     public void applyGravity(float dt) {
         vy -= 980 * dt;
     }
 
-    public void update(float dt, List<Platform> plats) {
+    public void update(float dt, List<Platform> platforms) {
+        updatePosition(dt);
+        updateDash(dt);
+        updateJumpOval(dt);
+        checkPlatformCollisions(platforms);
+        resetVelocity();
+    }
+
+    private void updatePosition(float dt) {
         x += vx * dt;
         y += vy * dt;
         onGround = false;
 
-        if (x > worldWidth - 20) x = worldWidth - 20;
-        if (x < 0) x = 0;
-        if (y > worldHeight - 20) y = worldHeight - 20;
-        if (y < 20) y = 20;
-        for (Platform p : plats) {
-            if (p.x - 20 < x && x < p.x + p.w 
-                && 
-                p.y + p.h - 5 < y && y < p.y + p.h + 5) { // on the platform
-                if(vy < 0) { // only when falling (comming from top)
-                    y = p.y + p.h;
-                    onGround = true;
-                    numberOfJump = 0;
-                    vy = 0;
-                }
-            }
-        }
-
-        // Countdown timer for additional jump oval
-                if (showAdditionalJumpOval) {
-            jumpOvalTimer += dt;
-
-            // Fade in for first 0.2s, then fade out for next 0.8s
-            if (jumpOvalTimer <= 0.2f) {
-                jumpOvalAlpha = jumpOvalTimer / 0.2f; // 0 to 1
-            } else if (jumpOvalTimer <= 1.0f) {
-                jumpOvalAlpha = 1f - (jumpOvalTimer - 0.2f) / 0.8f; // 1 to 0
-            } else {
-                showAdditionalJumpOval = false;
-                jumpOvalAlpha = 0f;
-                jumpOvalTimer = 0f;
-            }
-        }
-
-        // System.out.println("Player{x=" + x + 
-        // ", y=" + y + ", vx=" + vx + ", vy=" + vy + 
-        // ", onGround=" + onGround + /* ",  isHigherJump=" + isHigherJump + */ 
-        // ",  counter=" + counter + /* ",   additionalJumpinfo=" + additionalJumpinfo + */
-        // ", numberOfJump=" + numberOfJump +
-        // "}");
+        // World boundaries
+        x = Math.max(0, Math.min(x, Game.WORLD_WIDTH - 20));
+        y = Math.max(20, Math.min(y, Game.WORLD_HEIGHT - 20));
 
         if (y <= 20) {
             y = 20;
             onGround = true;
             vy = 0;
         }
+    }
 
+    private void updateDash(float dt) {
+        if (isDashing) {
+            dashTimer -= dt;
+            if (dashTimer <= 0) {
+                isDashing = false;
+            }
+            dashTriangle.update(x, y, dashLeftOrRight);
+        }
+
+        if (dashCooldown > 0f) {
+            dashCooldown -= dt;
+            if (dashCooldown < 0f) {
+                dashCooldown = 0f;
+            }
+        }
+    }
+
+    private void updateJumpOval(float dt) {
+        if (showAdditionalJumpOval) {
+            jumpOvalTimer += dt;
+            updateJumpOvalAlpha();
+        }
+    }
+
+    private void updateJumpOvalAlpha() {
+        if (jumpOvalTimer <= 0.2f) {
+            jumpOvalAlpha = jumpOvalTimer / 0.2f;
+        } else if (jumpOvalTimer <= 1.0f) {
+            jumpOvalAlpha = 1f - (jumpOvalTimer - 0.2f) / 0.8f;
+        } else {
+            showAdditionalJumpOval = false;
+            jumpOvalAlpha = 0f;
+            jumpOvalTimer = 0f;
+        }
+    }
+
+    private void checkPlatformCollisions(List<Platform> platforms) {
+        for (Platform platform : platforms) {
+            if (isOnPlatform(platform)) {
+                handlePlatformCollision(platform);
+            }
+        }
+    }
+
+    private boolean isOnPlatform(Platform platform) {
+        return platform.getX() - 20 < x && x < platform.getX() + platform.getWidth() &&
+               platform.getY() + platform.getHeight() - 5 < y && y < platform.getY() + platform.getHeight() + 5;
+    }
+
+    private void handlePlatformCollision(Platform platform) {
+        if (vy < 0) {
+            y = platform.getY() + platform.getHeight();
+            onGround = true;
+            numberOfJump = 0;
+            vy = 0;
+        }
+    }
+
+    private void resetVelocity() {
         vx = 0;
     }
 
-    public boolean collides(Star s) {
-        return Math.hypot((x + 10) - s.x, (y + 10) - s.y) < 15;
+    public boolean collides(Star star) {
+        if (isDashing && dashTriangle.collides(star)) {
+            return true;
+        }
+        return Math.hypot((x + 10) - star.getX(), (y + 10) - star.getY()) < 15;
     }
 
-    public boolean collides(Mob m) {
-        return x < m.x + m.size && x + 20 > m.x && y < m.y + m.size && y + 20 > m.y;
+    public boolean collides(Mob mob) {
+        return x < mob.getX() + mob.getSize() && x + 20 > mob.getX() && 
+               y < mob.getY() + mob.getSize() && y + 20 > mob.getY();
     }
 
-    public void renderJumpOval() {
+    public void render() {
+        renderJumpOval();
+        renderDashTriangle();
+        renderPlayer();
+    }
+
+    private void renderJumpOval() {
         if (!showAdditionalJumpOval || jumpOvalAlpha <= 0f) return;
 
         glPushMatrix();
         glTranslatef(jumpOvalX, jumpOvalY, 0);
-
-        glColor4f(1f, 1f, 1f, jumpOvalAlpha); // fading opacity
-
-        int segments = 40;
-        float radiusX = 15f;
-        float radiusY = 7f;
+        glColor4f(1f, 1f, 1f, jumpOvalAlpha);
 
         glBegin(GL_TRIANGLE_FAN);
         glVertex2f(0, 0);
-        for (int i = 0; i <= segments; i++) {
-            double angle = 2 * Math.PI * i / segments;
-            float dx = (float) Math.cos(angle) * radiusX;
-            float dy = (float) Math.sin(angle) * radiusY;
+        for (int i = 0; i <= JUMP_OVAL_SEGMENTS; i++) {
+            double angle = 2 * Math.PI * i / JUMP_OVAL_SEGMENTS;
+            float dx = (float) Math.cos(angle) * JUMP_OVAL_RADIUS_X;
+            float dy = (float) Math.sin(angle) * JUMP_OVAL_RADIUS_Y;
             glVertex2f(dx, dy);
         }
         glEnd();
@@ -485,14 +629,18 @@ class Player {
         glPopMatrix();
     }
 
-    public void render() {
-        renderJumpOval(); // draw oval if needed
+    private void renderDashTriangle() {
+        if (isDashing) {
+            dashTriangle.render();
+        }
+    }
 
+    private void renderPlayer() {
         if (counter == 0) {
-            glColor3f(0, 0, 1); // Blue when on ground
+            glColor3f(0, 0, 1);
         } else {
-            float red = Math.min(1.0f, counter / 300f); // Scale red based on charge
-            glColor3f(red, 0, 1 - red); // Transition from blue to red
+            float red = Math.min(1.0f, counter / 300f);
+            glColor3f(red, 0, 1 - red);
         }
 
         glBegin(GL_QUADS);
@@ -502,51 +650,198 @@ class Player {
         glVertex2f(x, y + 20);
         glEnd();
     }
+
+    public float getX() {
+        return x;
+    }
 }
 
+// New DashTriangle class
+class DashTriangle {
+    private static final float SIZE = 15f;
+    private float x, y;
+    private boolean facingRight;
 
+    public DashTriangle(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public void update(float playerX, float playerY, boolean facingRight) {
+        this.x = playerX;
+        this.y = playerY;
+        this.facingRight = facingRight;
+    }
+
+    public boolean collides(Star star) {
+        float[] vertices = getVertices();
+        return pointInTriangle(star.getX() + 5, star.getY() + 7.5f, 
+                             vertices[0], vertices[1], 
+                             vertices[2], vertices[3], 
+                             vertices[4], vertices[5]);
+    }
+
+    private float[] getVertices() {
+        float[] vertices = new float[6];
+        if (facingRight) {
+            vertices[0] = x + 20; // tip
+            vertices[1] = y + 10;
+            vertices[2] = x;      // base left
+            vertices[3] = y;
+            vertices[4] = x;      // base right
+            vertices[5] = y + 20;
+        } else {
+            vertices[0] = x;      // tip
+            vertices[1] = y + 10;
+            vertices[2] = x + 20; // base left
+            vertices[3] = y;
+            vertices[4] = x + 20; // base right
+            vertices[5] = y + 20;
+        }
+        return vertices;
+    }
+
+    private boolean pointInTriangle(float px, float py, 
+                                  float x1, float y1, 
+                                  float x2, float y2, 
+                                  float x3, float y3) {
+        float A = 0.5f * (-y2 * x3 + y1 * (-x2 + x3) + x1 * (y2 - y3) + x2 * y3);
+        float sign = A < 0 ? -1 : 1;
+        float s = (y1 * x3 - x1 * y3 + (y3 - y1) * px + (x1 - x3) * py) * sign;
+        float t = (x1 * y2 - y1 * x2 + (y1 - y2) * px + (x2 - x1) * py) * sign;
+        return s > 0 && t > 0 && (s + t) < 2 * A * sign;
+    }
+
+    public void render() {
+        glColor3f(1, 0.5f, 0);
+        float[] vertices = getVertices();
+        glBegin(GL_TRIANGLES);
+        glVertex2f(vertices[0], vertices[1]);
+        glVertex2f(vertices[2], vertices[3]);
+        glVertex2f(vertices[4], vertices[5]);
+        glEnd();
+    }
+}
 
 // Static platforms
 class Platform {
-    public float x, y, w, h;
-    public Platform(float x, float y, float w, float h) { this.x=x; this.y=y; this.w=w; this.h=h; }
+    private static final float DEFAULT_COLOR_R = 0.3f;
+    private static final float DEFAULT_COLOR_G = 0.3f;
+    private static final float DEFAULT_COLOR_B = 0.3f;
+
+    private final float x;
+    private final float y;
+    private final float width;
+    private final float height;
+
+    public Platform(float x, float y, float width, float height) {
+        this.x = x;
+        this.y = y;
+        this.width = width;
+        this.height = height;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getWidth() {
+        return width;
+    }
+
+    public float getHeight() {
+        return height;
+    }
+
     public void render() {
-        glColor3f(0.3f,0.3f,0.3f);
+        glColor3f(DEFAULT_COLOR_R, DEFAULT_COLOR_G, DEFAULT_COLOR_B);
         glBegin(GL_QUADS);
         glVertex2f(x, y);
-        glVertex2f(x+w, y);
-        glVertex2f(x+w, y+h);
-        glVertex2f(x, y+h);
+        glVertex2f(x + width, y);
+        glVertex2f(x + width, y + height);
+        glVertex2f(x, y + height);
         glEnd();
     }
 }
 
 // Collectible stars
 class Star {
-    public float x, y;
-    public Star(float x, float y) { this.x=x; this.y=y; }
+    private static final float DEFAULT_COLOR_R = 1f;
+    private static final float DEFAULT_COLOR_G = 1f;
+    private static final float DEFAULT_COLOR_B = 0f;
+    private static final float SIZE = 10f;
+    private static final float HEIGHT = 15f;
+
+    private final float x;
+    private final float y;
+
+    public Star(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
     public void render() {
-        glColor3f(1,1,0);
+        glColor3f(DEFAULT_COLOR_R, DEFAULT_COLOR_G, DEFAULT_COLOR_B);
         glBegin(GL_TRIANGLES);
         glVertex2f(x, y);
-        glVertex2f(x+10, y);
-        glVertex2f(x+5, y+15);
+        glVertex2f(x + SIZE, y);
+        glVertex2f(x + SIZE / 2, y + HEIGHT);
         glEnd();
     }
 }
 
 // Simple mob stub
 class Mob {
-    public float x, y; public float size=20;
-    public Mob(float x, float y) { this.x=x; this.y=y; }
-    public void update(float dt) { /* random or patterned movement */ }
+    private static final float DEFAULT_COLOR_R = 1f;
+    private static final float DEFAULT_COLOR_G = 0f;
+    private static final float DEFAULT_COLOR_B = 1f;
+    private static final float DEFAULT_SIZE = 20f;
+
+    private float x;
+    private float y;
+    private final float size;
+
+    public Mob(float x, float y) {
+        this.x = x;
+        this.y = y;
+        this.size = DEFAULT_SIZE;
+    }
+
+    public float getX() {
+        return x;
+    }
+
+    public float getY() {
+        return y;
+    }
+
+    public float getSize() {
+        return size;
+    }
+
+    public void update(float deltaTime) {
+        // Implement mob movement logic here
+    }
+
     public void render() {
-        glColor3f(1,0,1);
+        glColor3f(DEFAULT_COLOR_R, DEFAULT_COLOR_G, DEFAULT_COLOR_B);
         glBegin(GL_QUADS);
         glVertex2f(x, y);
-        glVertex2f(x+size, y);
-        glVertex2f(x+size, y+size);
-        glVertex2f(x, y+size);
+        glVertex2f(x + size, y);
+        glVertex2f(x + size, y + size);
+        glVertex2f(x, y + size);
         glEnd();
     }
 }
